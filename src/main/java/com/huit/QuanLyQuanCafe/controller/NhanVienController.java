@@ -14,40 +14,71 @@ public class NhanVienController {
     @Autowired
     private NhanVienRepository nhanVienRepository;
 
-    // 1. HIỂN THỊ DANH SÁCH (READ)
+    // 1. DANH SÁCH & TÌM KIẾM
     @GetMapping
-    public String hienThiDanhSach(Model model) {
-        model.addAttribute("listNV", nhanVienRepository.findAll());
-        return "nhanvien/index";
+    public String hienThiDanhSach(Model model, @RequestParam(name = "keyword", required = false) String keyword) {
+        if (keyword != null && !keyword.isEmpty()) {
+            model.addAttribute("listNV", nhanVienRepository.findByTenNVContainingIgnoreCase(keyword));
+            model.addAttribute("keyword", keyword);
+        } else {
+            model.addAttribute("listNV", nhanVienRepository.findAll());
+        }
+        return "admin/nhan-vien";
     }
 
-    // 2. HIỂN THỊ FORM THÊM MỚI (CREATE)
+    // 2. FORM THÊM MỚI
     @GetMapping("/them")
     public String hienThiFormThem(Model model) {
         model.addAttribute("nhanVien", new NhanVien());
-        return "nhanvien/form";
+        return "admin/nhan-vien-form";
     }
 
-    // 3. HIỂN THỊ FORM CẬP NHẬT (UPDATE)
+    // 3. FORM SỬA (Lưu ý kiểu dữ liệu của ID)
     @GetMapping("/sua/{id}")
     public String hienThiFormSua(@PathVariable("id") Integer id, Model model) {
         NhanVien nv = nhanVienRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã NV: " + id));
         model.addAttribute("nhanVien", nv);
-        return "nhanvien/form";
+        return "admin/nhan-vien-form";
     }
 
-    // 4. XỬ LÝ LƯU (Dùng chung cho cả Thêm và Sửa)
+    // 4. LƯU
     @PostMapping("/luu")
     public String luuNhanVien(@ModelAttribute("nhanVien") NhanVien nhanVien) {
+
+        // Kiểm tra trạng thái: Nếu là nhân viên mới thì set mặc định = 1
+        if (nhanVien.getTrangThai() == null) {
+            nhanVien.setTrangThai(1);
+        }
+
         nhanVienRepository.save(nhanVien);
         return "redirect:/nhan-vien";
     }
 
-    // 5. XỬ LÝ XÓA (DELETE)
+    // 5. XÓA
     @GetMapping("/xoa/{id}")
     public String xoaNhanVien(@PathVariable("id") Integer id) {
-        nhanVienRepository.deleteById(id);
+        // Tìm xem nhân viên có tồn tại không trước khi xóa
+        NhanVien nv = nhanVienRepository.findById(id).orElse(null);
+        if (nv != null) {
+            nhanVienRepository.delete(nv);
+        }
+        return "redirect:/nhan-vien";
+    }
+
+    // 6. ĐỔI TRẠNG THÁI (BẬT/TẮT)
+    @GetMapping("/doi-trang-thai/{id}")
+    public String doiTrangThai(@PathVariable("id") Integer id) {
+        if (id == 1) {
+            return "redirect:/nhan-vien?error=cannot_lock_admin";
+        }
+        NhanVien nv = nhanVienRepository.findById(id).orElse(null);
+        if (nv != null) {
+            // Nếu là 1 thì chuyển thành 0, ngược lại thì thành 1
+            int trangThaiMoi = (nv.getTrangThai() == 1) ? 0 : 1;
+            nv.setTrangThai(trangThaiMoi);
+            nhanVienRepository.save(nv);
+        }
         return "redirect:/nhan-vien";
     }
 }

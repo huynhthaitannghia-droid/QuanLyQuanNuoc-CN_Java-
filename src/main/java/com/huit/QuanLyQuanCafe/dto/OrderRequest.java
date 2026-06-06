@@ -16,5 +16,6 @@ public class OrderRequest {
         private Integer id; // Mã Sản Phẩm
         private Integer soLuong;
         private BigDecimal gia;
+        private String tuyChon;
     }
 }

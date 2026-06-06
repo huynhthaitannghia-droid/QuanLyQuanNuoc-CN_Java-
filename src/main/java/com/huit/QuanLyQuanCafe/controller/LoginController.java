@@ -28,35 +28,41 @@ public class LoginController {
                                @RequestParam("password") String password,
                                HttpSession session,
                                Model model) {
+        try {
+            NhanVien nv = nhanVienRepository.findByTenDangNhap(username);
 
-        // 1. Tìm nhân viên dưới DB theo tên đăng nhập
-        NhanVien nv = nhanVienRepository.findByTenDangNhap(username);
+            if (nv != null && nv.getMatKhau().equals(password)) {
+                // Kiểm tra null an toàn (tránh văng NullPointerException)
+                if (nv.getTrangThai() == null || nv.getTrangThai() != 1) {
+                    model.addAttribute("error", "Tài khoản này đã bị khóa hoặc chưa kích hoạt!");
+                    return "login";
+                }
 
-        // 2. Kiểm tra tài khoản có tồn tại không và mật khẩu có khớp không
-        if (nv != null && nv.getMatKhau().equals(password)) {
+                session.setAttribute("maNV", nv.getMaNV());
+                session.setAttribute("tenNV", nv.getTenNV());
+                session.setAttribute("vaiTro", nv.getVaiTro());
 
-            // 3. Kiểm tra trạng thái (1 là đang làm, 0 là đã nghỉ - dựa theo schema SQL của bạn)
-            if (nv.getTrangThai() == 0) {
-                model.addAttribute("error", "Tài khoản này đã bị khóa hoặc nhân viên đã nghỉ việc!");
+                return "Admin".equalsIgnoreCase(nv.getVaiTro()) ? "redirect:/admin/dashboard" : "redirect:/hoa-don/ban-hang";
+            } else {
+                model.addAttribute("error", "Sai tên đăng nhập hoặc mật khẩu!");
                 return "login";
             }
-
-            // 4. Đăng nhập thành công -> Lưu thông tin vào Session (Bộ nhớ phiên)
-            session.setAttribute("maNV", nv.getMaNV()); // Lưu mã NV để mốt gắn vào lúc tạo Hóa đơn
-            session.setAttribute("tenNV", nv.getTenNV());
-            session.setAttribute("vaiTro", nv.getVaiTro());
-
-            // 5. Phân quyền chuyển trang dựa theo Vai Trò
-            if ("Admin".equalsIgnoreCase(nv.getVaiTro())) {
-                return "redirect:/san-pham";
-            } else {
-                return "redirect:/hoa-don/ban-hang";
-            }
-
-        } else {
-            // Sai tài khoản hoặc mật khẩu
-            model.addAttribute("error", "Sai tên đăng nhập hoặc mật khẩu!");
+        } catch (Exception e) {
+            // Thay vì để web sập, ta bắt lấy lỗi và trả về trang đăng nhập với thông báo
+            model.addAttribute("error", "Hệ thống đang bận, vui lòng thử lại sau!");
             return "login";
         }
+    }
+
+    // ==========================================
+    // 3. XỬ LÝ ĐĂNG XUẤT (THÊM MỚI Ở ĐÂY)
+    // ==========================================
+    @GetMapping("/logout")
+    public String xuLyDangXuat(HttpSession session) {
+        // Lệnh này sẽ xóa sạch trí nhớ của Server về người dùng hiện tại
+        session.invalidate();
+
+        // Sau khi xóa xong thì đá thẳng về trang chủ đăng nhập
+        return "redirect:/";
     }
 }

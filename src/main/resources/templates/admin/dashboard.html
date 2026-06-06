@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Admin LaQuin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; margin: 0; padding: 0; }
+        .wrapper { display: flex; width: 100%; }
+
+        /* SIDEBAR CỐ ĐỊNH */
+        #sidebar {
+            position: fixed; top: 0; left: 0; width: 250px; height: 100vh;
+            background: #343a40; color: #fff; display: flex; flex-direction: column; z-index: 1000;
+        }
+        #sidebar .sidebar-header { padding: 20px; background: #2f353a; text-align: center; }
+        #sidebar ul li a { padding: 15px 20px; font-size: 1.1rem; display: block; color: #c2c7d0; text-decoration: none; }
+        #sidebar ul li a:hover { color: #fff; background: #495057; }
+        #sidebar ul li.active > a { color: #fff; background: #007bff; }
+
+        #content { margin-left: 250px; width: calc(100% - 250px); padding: 30px; min-height: 100vh; }
+
+        .stat-card { border: none; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-card:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <nav id="sidebar" class="d-flex flex-column">
+        <div class="sidebar-header">
+            <h4 class="m-0 fw-bold text-white"><i class="fa-solid fa-mug-hot me-2"></i>LaQuin Admin</h4>
+        </div>
+        <ul class="list-unstyled components mt-3">
+            <li class="active"><a href="/admin/dashboard"><i class="fa-solid fa-chart-pie me-2"></i> Tổng quan</a></li>
+            <li><a href="/san-pham"><i class="fa-solid fa-box me-2"></i> Quản lý Sản phẩm</a></li>
+            <li><a href="/danh-muc"><i class="fa-solid fa-layer-group me-2"></i> Quản lý Danh mục</a></li>
+            <li><a href="/nhan-vien"><i class="fa-solid fa-users me-2"></i> Quản lý Nhân viên</a></li>
+            <li class="border-top mt-3"><a href="/hoa-don/ban-hang" class="text-warning"><i class="fa-solid fa-cash-register me-2"></i> Bán Hàng (POS)</a></li>
+        </ul>
+        <ul class="list-unstyled mt-auto mb-3">
+            <li class="border-top pt-2"><a href="#" onclick="dangXuat()" class="text-danger fw-bold"><i class="fa-solid fa-right-from-bracket me-2"></i> Đăng xuất</a></li>
+        </ul>
+    </nav>
+
+    <div id="content">
+        <div class="mb-4">
+            <h2 class="fw-bold text-dark m-0" id="loiChao"></h2>
+            <p class="text-muted">Chào mừng bạn quay trở lại. Dưới đây là tình hình hoạt động của quán.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #198754;">
+                    <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Doanh thu nay</h6>
+                    <h3 class="fw-bold text-dark m-0" th:text="${#numbers.formatDecimal(doanhThuHomNay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #fd7e14;">
+                    <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Đơn hàng</h6>
+                    <h3 class="fw-bold text-dark m-0" th:text="${donHangHomNay}">0</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #0d6efd;">
+                    <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Bàn đang phục vụ</h6>
+                    <h3 class="fw-bold text-dark m-0" th:text="${banPhucVu}">0</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #dc3545;">
+                    <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Món bán chạy</h6>
+                    <h5 class="fw-bold text-dark m-0 text-truncate" th:text="${monBanChay}">Tên món</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5 g-4">
+            <div class="col-md-7">
+                <div class="card p-4 border-0 shadow-sm h-100" style="border-radius: 15px;">
+                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-4"><i class="fa-solid fa-chart-line me-2 text-primary"></i>Doanh thu 7 ngày</h5>
+                    <canvas id="doanhThuChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card p-4 border-0 shadow-sm h-100" style="border-radius: 15px;">
+                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-4"><i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Đơn hàng vừa xong</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                            <tr><th>Mã Đơn</th><th>Giờ tạo</th><th>Tổng tiền</th><th>Hình thức</th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="hd : ${donHangMoi}" th:onclick="'xemChiTiet(' + ${hd.maHD} + ')'" style="cursor: pointer;">
+                                <td class="fw-bold text-primary" th:text="'#' + ${hd.maHD}">#1</td>
+                                <td th:text="${hd.gioTao}">14:30</td>
+                                <td class="fw-bold text-danger" th:text="${#numbers.formatDecimal(hd.tongTien, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td><span class="badge bg-info text-dark" th:text="${hd.phuongThucThanhToan}">Tiền mặt</span></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="chiTietHoaDonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content"><div class="modal-header"><h5 class="modal-title">Chi tiết đơn <span id="modalMaHD"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><table class="table table-bordered text-center"><thead><tr><th>Món</th><th>SL</th><th>Đơn giá</th><th>Đường, Đá</th><th>Thành tiền</th></tr></thead><tbody id="bangChiTietMon"></tbody></table></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+    function dangXuat() { if(confirm("Chắc chắn muốn thoát?")) window.location.href = '/logout'; }
+
+    // VẼ CHART
+    const ctx = document.getElementById('doanhThuChart').getContext('2d');
+    new Chart(ctx, { type: 'bar', data: { labels: /*[[${chartLabels}]]*/ [], datasets: [{ label: 'VNĐ', data: /*[[${chartData}]]*/ [], backgroundColor: '#0d6efd' }] } });
+
+    // XEM CHI TIẾT
+    function xemChiTiet(maHD) {
+        document.getElementById('modalMaHD').innerText = '#' + maHD;
+        fetch('/admin/api/chi-tiet-hoa-don/' + maHD).then(r => r.json()).then(data => {
+            const tbody = document.getElementById('bangChiTietMon'); tbody.innerHTML = '';
+            data.forEach(item => {
+                tbody.innerHTML += `<tr><td>${item[0]}</td><td>${item[1]}</td><td>${item[2]} đ</td><td>${item[4]}, ${item[5]}</td><td>${item[3]} đ</td></tr>`;
+            });
+            new bootstrap.Modal(document.getElementById('chiTietHoaDonModal')).show();
+        });
+    }
+
+    const gio = new Date().getHours();
+    let loiChao = (gio < 12) ? "Chào buổi sáng" : (gio < 18) ? "Chào buổi chiều" : "Chào buổi tối";
+    document.getElementById('loiChao').innerText = loiChao + ", " + /*[[${tenAdmin}]]*/ 'Admin';
+</script>
+</body>
+</html>
