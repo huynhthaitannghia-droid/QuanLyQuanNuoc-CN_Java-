@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Màn Hình Order - LaQuin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .top-bar { background: white; border-bottom: 2px solid #e9ecef; }
+        .table-btn { width: 100%; height: 100px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; border: 2px solid #0d6efd; background: white; color: #333; transition: all 0.2s; }
+        .table-btn:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); transform: translateY(-2px); }
+        .table-btn.active { background: #0d6efd; color: white; }
+        .nav-pills .nav-link { color: #333; font-weight: 500; border-radius: 20px; padding: 8px 20px; cursor: pointer; }
+        .nav-pills .nav-link.active { background-color: #0d6efd; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar d-flex justify-content-between align-items-center px-4 py-2 shadow-sm">
+    <h3 class="m-0 fw-bold text-dark">LaQuin</h3>
+    <div>
+        <button class="btn btn-secondary me-2 fw-bold" onclick="dongCa()"><i class="fa-solid fa-power-off me-1"></i> Đóng ca</button>
+        <button class="btn btn-light border"><i class="fa-solid fa-gear fs-5"></i></button>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12 p-4">
+
+            <div class="d-flex align-items-center mb-4 fs-5">
+                <strong class="me-3">Khu vực:</strong>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input filter-radio" type="radio" name="trangThai" value="ALL" checked>
+                    <label class="form-check-label">Tất cả bàn</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input filter-radio" type="radio" name="trangThai" value="Có khách">
+                    <label class="form-check-label">Bàn có khách</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input filter-radio" type="radio" name="trangThai" value="Trống">
+                    <label class="form-check-label">Bàn trống</label>
+                </div>
+            </div>
+
+            <ul class="nav nav-pills mb-4 gap-2" id="khuVucTabs">
+                <li class="nav-item"><a class="nav-link active" data-filter="ALL">Tất cả khu vực</a></li>
+                <li class="nav-item"><a class="nav-link" data-filter="MANG_VE">Mang về</a></li>
+                <li class="nav-item"><a class="nav-link" data-filter="TAI_CHO">Tại chỗ</a></li>
+                <li class="nav-item"><a class="nav-link" data-filter="SHIP">Ship</a></li>
+                <li class="nav-item"><a class="nav-link" data-filter="GRAB">Grab</a></li>
+            </ul>
+
+            <div class="row g-3" id="danhSachBan">
+                <div class="col-2 ban-item" th:each="ban : ${listBan}"
+                     th:data-id="${ban.maBan}"
+                     th:data-ten="${ban.tenBan}"
+                     th:data-trangthai="${ban.trangThai}">
+                    <a th:href="@{/hoa-don/order/{id}(id=${ban.maBan})}"
+                       class="table-btn shadow-sm d-flex flex-column justify-content-center align-items-center text-decoration-none"
+                       th:classappend="${ban.trangThai == 'Có khách' ? 'active' : ''}">
+                        <span th:text="${ban.tenBan}">Tên Bàn</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="dongCaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border: 2px solid #dc3545; border-radius: 15px;">
+            <div class="modal-header bg-danger text-white border-bottom-0 pb-3" style="border-radius: 13px 13px 0 0;">
+                <h5 class="modal-title w-100 text-center fw-bold fs-4">BÁO CÁO ĐÓNG CA</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body px-5 py-4">
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-file-invoice-dollar text-danger" style="font-size: 3.5rem;"></i>
+                </div>
+
+                <div class="bg-light p-4 rounded-3 mb-4 border">
+
+                    <div class="d-flex justify-content-between border-bottom pb-3 mb-3">
+                        <span class="fs-5 fw-bold text-secondary">Thời gian đăng xuất:</span>
+                        <span class="fs-5 fw-bold text-dark" id="thoiGianDongCa">--:--</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between border-bottom pb-3 mb-3">
+                        <span class="fs-5 fw-bold text-secondary">Nhân viên trực ca:</span>
+                        <span class="fs-5 fw-bold text-primary" th:text="${session.tenNV}">Tên Nhân Viên</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span class="fs-5 fw-bold text-secondary">Tổng doanh thu ca:</span>
+                        <span class="fs-5 fw-bold text-danger fs-4" id="tienDoanhThuCa">0 đ</span>
+                    </div>
+
+                </div>
+
+                <p class="text-center text-muted mb-0 fs-6">Bạn có chắc chắn muốn kết thúc ca làm việc và đăng xuất khỏi hệ thống?</p>
+            </div>
+
+            <div class="modal-footer border-top-0 justify-content-center px-5 pb-4 gap-3">
+                <button type="button" class="btn btn-outline-secondary px-4 py-2 fw-bold rounded-pill" data-bs-dismiss="modal">Quay lại</button>
+                <button type="button" class="btn btn-danger px-4 py-2 fw-bold rounded-pill" onclick="xacNhanDongCa()">Xác nhận Đóng ca</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- 1. LOGIC LỌC BÀN ---
+        const tabs = document.querySelectorAll("#khuVucTabs .nav-link");
+        const radios = document.querySelectorAll(".filter-radio");
+        const banItems = document.querySelectorAll(".ban-item");
+
+        function filterTables() {
+            const activeTab = document.querySelector("#khuVucTabs .nav-link.active").getAttribute("data-filter");
+            const activeRadio = document.querySelector(".filter-radio:checked").value;
+
+            banItems.forEach(item => {
+                const tenBan = item.getAttribute("data-ten").toLowerCase();
+                const trangThai = item.getAttribute("data-trangthai") || "Trống";
+
+                let matchTab = false;
+                let matchRadio = false;
+
+                if (activeTab === "ALL") matchTab = true;
+                else if (activeTab === "TAI_CHO" && tenBan.includes("bàn")) matchTab = true;
+                else if (activeTab === "SHIP" && tenBan.includes("ship")) matchTab = true;
+                else if (activeTab === "GRAB" && (tenBan.includes("g") || tenBan.includes("grab"))) matchTab = true;
+                else if (activeTab === "MANG_VE" && tenBan.includes("mang về")) matchTab = true;
+
+                if (activeRadio === "ALL") matchRadio = true;
+                else if (activeRadio === trangThai) matchRadio = true;
+
+                if (matchTab && matchRadio) item.style.display = "block";
+                else item.style.display = "none";
+            });
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener("click", function(e) {
+                e.preventDefault();
+                tabs.forEach(t => t.classList.remove("active"));
+                this.classList.add("active");
+                filterTables();
+            });
+        });
+
+        radios.forEach(radio => {
+            radio.addEventListener("change", filterTables);
+        });
+
+        // --- 2. KHỞI TẠO MODAL ĐÓNG CA ---
+        const modalElement = document.getElementById('dongCaModal');
+        if(modalElement) {
+            window.modalDongCa = new bootstrap.Modal(modalElement);
+        }
+    });
+
+    // --- 3. TỰ ĐỘNG KIỂM TRA BÀN NÀO ĐANG CÓ ĐƠN LƯU TẠM ---
+    function loadParkedOrders() {
+        const tatCaBan = document.querySelectorAll(".ban-item");
+        tatCaBan.forEach(item => {
+            const maBan = item.getAttribute("data-id");
+            const tenBan = item.getAttribute("data-ten");
+            const btnBan = item.querySelector("a.table-btn");
+
+            const parkedTotal = localStorage.getItem('parked_total_' + maBan);
+
+            if (parkedTotal) {
+                btnBan.classList.add("active");
+                const tienFormat = new Intl.NumberFormat('vi-VN').format(parkedTotal) + ' đ';
+                btnBan.innerHTML = `<span>${tenBan}</span><span class="fs-6 mt-1 text-white">${tienFormat}</span>`;
+            }
+        });
+    }
+    loadParkedOrders();
+
+    // --- 4. HÀM MỞ POPUP BÁO CÁO KHI BẤM NÚT "ĐÓNG CA" ---
+    window.dongCa = function() {
+
+        // 1. KIỂM TRA XEM CÒN BÀN CHƯA THANH TOÁN KHÔNG
+        let conBanChuaThanhToan = false;
+        for (let i = 0; i < localStorage.length; i++) {
+            // Nếu tìm thấy bất kỳ dữ liệu nào bắt đầu bằng 'parked_total_' nghĩa là có bàn đang mở
+            if (localStorage.key(i).startsWith('parked_total_')) {
+                conBanChuaThanhToan = true;
+                break;
+            }
+        }
+
+        // Nếu còn bàn thì bật cảnh báo và chặn lại, không cho mở Modal
+        if (conBanChuaThanhToan) {
+            alert("⚠️ KHÔNG THỂ ĐÓNG CA!\n\nHệ thống phát hiện vẫn còn bàn chưa thanh toán. Vui lòng hoàn tất thanh toán hoặc dọn dẹp các bàn đang mở trước khi kết thúc ca làm việc.");
+            return; // Lệnh này giúp dừng hẳn hàm, không chạy các dòng bên dưới nữa
+        }
+
+        // 2. NẾU ĐÃ THANH TOÁN HẾT THÌ MỞ MODAL BÌNH THƯỜNG
+        const now = new Date();
+        const gio = now.getHours().toString().padStart(2, '0');
+        const phut = now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('thoiGianDongCa').innerText = gio + ":" + phut;
+
+        const doanhThu = parseFloat(localStorage.getItem('doanhThuCa')) || 0;
+        document.getElementById('tienDoanhThuCa').innerText = new Intl.NumberFormat('vi-VN').format(doanhThu) + ' đ';
+
+        if (window.modalDongCa) {
+            window.modalDongCa.show();
+        } else {
+            alert("Lỗi: Không tìm thấy giao diện Đóng ca!");
+        }
+    }
+
+    // --- 5. HÀM XỬ LÝ ĐĂNG XUẤT THỰC SỰ KHI BẤM "XÁC NHẬN" ---
+    window.xacNhanDongCa = function() {
+        const doanhThu = parseFloat(localStorage.getItem('doanhThuCa')) || 0;
+
+        const formData = new FormData();
+        formData.append("tongTien", doanhThu);
+
+        fetch('/hoa-don/luu-dong-ca', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            localStorage.clear();
+            window.location.href = '/';
+        })
+        .catch(error => {
+            localStorage.clear();
+            window.location.href = '/';
+        });
+    }
+</script>
+</body>
+</html>

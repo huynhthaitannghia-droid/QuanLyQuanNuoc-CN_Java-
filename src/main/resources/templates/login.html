@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng Nhập - LaQuin Cafe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; height: 100vh; display: flex; align-items: center; }
+        .login-card { border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card login-card p-4">
+                <div class="card-body">
+                    <h3 class="text-center text-primary mb-4 fw-bold">LaQuin Cafe</h3>
+
+                    <div th:if="${error}" class="alert alert-danger py-2 text-center" th:text="${error}"></div>
+
+                    <form th:action="@{/xac-thuc}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Tên đăng nhập</label>
+                            <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập..." required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Mật khẩu</label>
+                            <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu..." required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">ĐĂNG NHẬP</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

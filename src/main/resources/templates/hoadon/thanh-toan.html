@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thanh Toán - LaQuin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .top-bar { background: white; border-bottom: 1px solid #ccc; }
+        .payment-sidebar { background: white; height: calc(100vh - 60px); border-right: 1px solid #ccc; }
+        .payment-method-btn { width: 100%; border: none; border-bottom: 1px solid #ccc; padding: 25px; font-size: 1.2rem; background: white; text-align: center;}
+        .payment-method-btn.active { background-color: #f0f0f0; font-weight: bold; }
+        .main-content { height: calc(100vh - 60px); position: relative; background: white; }
+        .total-header { border-bottom: 1px solid #ccc; padding: 20px 30px; font-size: 1.5rem; }
+        .qr-box { border: 3px solid #0d6efd; border-radius: 15px; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; margin: 50px auto; background: white;}
+        .btn-checkout { position: absolute; bottom: 0; right: 0; font-size: 1.5rem; border-radius: 0; padding: 20px 40px; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar px-4 py-3 shadow-sm">
+    <h3 class="m-0 text-dark">Thanh toán - <span th:text="${ban.tenBan}">Tên Bàn</span></h3>
+</div>
+
+<div class="container-fluid p-0">
+    <div class="row g-0">
+
+        <div class="col-md-3 payment-sidebar">
+            <button class="payment-method-btn active" id="btn-tienmat">Tiền mặt</button>
+            <button class="payment-method-btn" id="btn-chuyenkhoan">Chuyển khoản</button>
+        </div>
+
+        <div class="col-md-9 main-content">
+            <div class="total-header">
+                Tổng: <span id="hien-thi-tien">0 VNĐ</span>
+            </div>
+
+            <div id="khu-vuc-qr" style="display: none;">
+                <div class="qr-box shadow-sm">
+                    Mã QR sẽ hiện <br> ở đây <br> <span class="fw-normal mt-2 fs-6">(Nếu thanh toán bằng hình thức chuyển khoản)</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-checkout" onclick="xuatHoaDon()">Thanh toán và xuất hóa đơn</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 1. LẤY TỔNG TIỀN TỪ TRANG ORDER SANG VÀ HIỂN THỊ
+    document.addEventListener("DOMContentLoaded", function() {
+        const tongTien = localStorage.getItem('tongTienThanhToan');
+        if(tongTien) {
+            // Đổi định dạng thành 299.000 VNĐ
+            const tienFormat = new Intl.NumberFormat('vi-VN').format(tongTien) + ' VNĐ';
+            document.getElementById('hien-thi-tien').innerText = tienFormat;
+        }
+    });
+
+    // 2. XỬ LÝ CHUYỂN ĐỔI TAB (TIỀN MẶT / CHUYỂN KHOẢN)
+    const btnTienMat = document.getElementById('btn-tienmat');
+    const btnChuyenKhoan = document.getElementById('btn-chuyenkhoan');
+    const khuVucQR = document.getElementById('khu-vuc-qr');
+
+    btnTienMat.addEventListener('click', function() {
+        this.classList.add('active');
+        btnChuyenKhoan.classList.remove('active');
+        khuVucQR.style.display = 'none'; // Ẩn QR
+    });
+
+    btnChuyenKhoan.addEventListener('click', function() {
+        this.classList.add('active');
+        btnTienMat.classList.remove('active');
+        khuVucQR.style.display = 'block'; // Hiện QR
+    });
+
+    // 3. XỬ LÝ NÚT THANH TOÁN CUỐI CÙNG (LƯU DATABASE)
+        function xuatHoaDon() {
+            // Gom dữ liệu để gửi
+            const phuongThuc = document.querySelector('.payment-method-btn.active').innerText;
+            const tongTien = localStorage.getItem('tongTienThanhToan');
+            const gioHang = JSON.parse(localStorage.getItem('gioHang')); // Lấy giỏ hàng từ bộ nhớ
+            const maBan = "[[${ban.maBan}]]";
+
+            const orderData = {
+                maBan: parseInt(maBan),
+                tongTien: parseFloat(tongTien),
+                phuongThuc: phuongThuc,
+                items: gioHang
+            };
+
+            // Gửi cục JSON về cho Spring Boot
+            fetch('/hoa-don/luu-thanh-toan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data === "OK") {
+                    alert("✅ THANH TOÁN THÀNH CÔNG!\nHóa đơn và các món nước đã được lưu vĩnh viễn vào Database.");
+
+                    let doanhThuCa = parseFloat(localStorage.getItem('doanhThuCa')) || 0;
+                    doanhThuCa += parseFloat(tongTien);
+                    localStorage.setItem('doanhThuCa', doanhThuCa);
+
+                    // Xóa dữ liệu tạm cho sạch sẽ
+                    localStorage.removeItem('tongTienThanhToan');
+                    localStorage.removeItem('gioHang');
+
+                    const maBan = "[[${ban.maBan}]]";
+                    localStorage.removeItem('parked_cart_' + maBan);
+                    localStorage.removeItem('parked_total_' + maBan);
+
+                    // Đẩy nhân viên quay về lại sơ đồ Bàn
+                    window.location.href = '/hoa-don/ban-hang';
+                } else {
+                    alert("Có lỗi xảy ra khi lưu Database:\n" + data);
+                }
+            });
+        }
+</script>
+</body>
+</html>

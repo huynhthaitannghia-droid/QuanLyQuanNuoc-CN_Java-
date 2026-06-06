@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order - LaQuin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; overflow: hidden; }
+        .top-bar { background: white; border-bottom: 2px solid #e9ecef; }
+        .sidebar { background: white; height: calc(100vh - 60px); overflow-y: auto; border-right: 2px solid #e9ecef; }
+        .menu-item { cursor: pointer; border: 2px solid transparent; transition: 0.1s; user-select: none; }
+        .menu-item:hover { border-color: #0d6efd; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .menu-item:active { transform: scale(0.95); }
+        .bill-section { background: white; height: calc(100vh - 60px); border-left: 2px solid #e9ecef; display: flex; flex-direction: column;}
+        .category-btn { width: 100%; text-align: left; padding: 15px; border: none; border-bottom: 1px solid #ddd; background: white; font-weight: bold;}
+        .category-btn.active, .category-btn:hover { background: #0d6efd; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar d-flex justify-content-between align-items-center px-4 py-2 shadow-sm">
+    <h4 class="m-0 fw-bold text-dark">LaQuin - <span th:text="${ban.tenBan}">Tên Bàn</span></h4>
+    <div>
+        <button onclick="luuTamVaQuayLai()" class="btn btn-outline-secondary me-2 fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Quay lại sơ đồ</button>
+        <button class="btn btn-light border"><i class="fa-solid fa-gear fs-5"></i></button>
+    </div>
+</div>
+
+<div class="container-fluid p-0">
+    <div class="row g-0">
+
+        <div class="col-md-2 sidebar p-0">
+            <div class="bg-primary text-white p-3 fw-bold text-center border-bottom">DANH MỤC</div>
+            <button class="category-btn active" data-madm="ALL">Tất cả</button>
+            <button class="category-btn" th:each="dm : ${listDM}" th:text="${dm.tenDM}" th:data-madm="${dm.maDM}"></button>
+        </div>
+
+        <div class="col-md-7 p-4" style="height: calc(100vh - 60px); overflow-y: auto;">
+            <div class="row g-3" id="danhSachMon">
+                <div class="col-md-3 sp-item" th:each="sp : ${listSP}" th:data-madm="${sp.danhMuc.maDM}">
+                    <div class="card menu-item h-100 text-center p-2 add-to-cart-btn"
+                         th:data-id="${sp.maSP}"
+                         th:data-ten="${sp.tenSP}"
+                         th:data-gia="${sp.giaBan}">
+
+                        <div class="bg-light rounded mb-2 d-flex align-items-center justify-content-center overflow-hidden" style="height: 100px;">
+                            <img th:if="${sp.hinhAnh != null and sp.hinhAnh != ''}"
+                                 th:src="${sp.hinhAnh}"
+                                 alt="Ảnh món"
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+
+                            <i th:unless="${sp.hinhAnh != null and sp.hinhAnh != ''}"
+                               class="fa-solid fa-mug-hot text-secondary fs-1"></i>
+                        </div>
+
+                        <h6 class="fw-bold mb-1" th:text="${sp.tenSP}">Tên món</h6>
+                        <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(sp.giaBan, 0, 'COMMA', 0, 'POINT')} + ' đ'">Giá</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 bill-section">
+            <div class="flex-grow-1 p-3 overflow-auto" id="cart-items">
+                <div class="text-center text-muted mt-5">Chưa có món nào được chọn.</div>
+            </div>
+
+            <div class="p-3 bg-light border-top">
+                <div class="d-flex justify-content-between mb-3 fs-4 fw-bold text-danger">
+                    <span>TỔNG TIỀN:</span>
+                    <span id="cart-total">0 đ</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary w-75 py-3 fw-bold fs-5 rounded-0" onclick="thanhToan()"><i class="fa-solid fa-credit-card me-2"></i> THANH TOÁN</button>
+                    <button class="btn btn-danger w-25 py-3 fw-bold rounded-0 fs-5" onclick="huyDon()" title="Hủy toàn bộ đơn"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="optionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border: 2px solid #0d6efd; border-radius: 15px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title w-100 text-center fw-bold fs-4">
+                    <span id="modalItemName" class="text-dark">Tên món</span> -
+                    <span id="modalItemPrice" class="text-warning">Giá tiền</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-5">
+
+                <input type="text" id="modalNote" class="form-control mb-4 rounded-pill px-4 py-2 border-secondary" placeholder="Ghi chú thêm...">
+
+                <div class="mb-3">
+                    <h6 class="fw-bold border-bottom pb-2 d-inline-block">Lượng đường</h6>
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                        <input type="radio" class="btn-check option-duong" name="duong" id="duong0" value="0% đường">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="duong0">0% đường</label>
+
+                        <input type="radio" class="btn-check option-duong" name="duong" id="duong30" value="30% đường">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="duong30">30% đường</label>
+
+                        <input type="radio" class="btn-check option-duong" name="duong" id="duong50" value="50% đường">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="duong50">50% đường</label>
+
+                        <input type="radio" class="btn-check option-duong" name="duong" id="duong70" value="70% đường">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="duong70">70% đường</label>
+                    </div>
+                </div>
+
+                <div class="mb-3 mt-4">
+                    <h6 class="fw-bold border-bottom pb-2 d-inline-block text-danger">Lượng đá (*)</h6>
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                        <input type="radio" class="btn-check option-da" name="da" id="da0" value="Không đá">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="da0">Không đá</label>
+
+                        <input type="radio" class="btn-check option-da" name="da" id="darieng" value="Đá riêng">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="darieng">Đá riêng</label>
+
+                        <input type="radio" class="btn-check option-da" name="da" id="dait" value="Ít đá">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="dait">Ít đá</label>
+
+                        <input type="radio" class="btn-check option-da" name="da" id="dachung" value="Đá chung">
+                        <label class="btn btn-outline-secondary rounded-pill px-4" for="dachung">Đá chung</label>
+                    </div>
+                </div>
+
+                <div class="mb-4 mt-4">
+                    <h6 class="fw-bold border-bottom pb-2 d-inline-block">Topping</h6>
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                        <input type="checkbox" class="btn-check option-topping" id="top1" data-name="Trân châu đen" data-price="5000">
+                        <label class="btn btn-outline-secondary rounded-3 px-3 text-center" for="top1">Trân châu đen<br><small>+ 5.000đ</small></label>
+
+                        <input type="checkbox" class="btn-check option-topping" id="top2" data-name="Trân châu trắng" data-price="5000">
+                        <label class="btn btn-outline-secondary rounded-3 px-3 text-center" for="top2">Trân châu trắng<br><small>+ 5.000đ</small></label>
+
+                        <input type="checkbox" class="btn-check option-topping" id="top3" data-name="Sương sáo" data-price="8000">
+                        <label class="btn btn-outline-secondary rounded-3 px-3 text-center" for="top3">Sương sáo<br><small>+ 8.000đ</small></label>
+
+                        <input type="checkbox" class="btn-check option-topping" id="top4" data-name="Pudding" data-price="8000">
+                        <label class="btn btn-outline-secondary rounded-3 px-3 text-center" for="top4">Pudding<br><small>+ 8.000đ</small></label>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0 justify-content-end px-5 pb-4">
+                <button type="button" class="btn btn-primary px-5 py-2 fw-bold fs-5 rounded-pill" id="btnSaveOption">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 1. CHỨC NĂNG LỌC DANH MỤC
+    const catButtons = document.querySelectorAll('.category-btn');
+    const spItems = document.querySelectorAll('.sp-item');
+
+    catButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Đổi màu nút
+            catButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const maDM = this.getAttribute('data-madm');
+
+            // Ẩn hiện sản phẩm
+            spItems.forEach(item => {
+                if (maDM === 'ALL' || item.getAttribute('data-madm') === maDM) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // 2. CHỨC NĂNG GIỎ HÀNG VÀ TÙY CHỌN (POS CORE)
+    let gioHang = [];
+    let monDangChon = null; // Biến tạm lưu món đang được click
+    const optionModal = new bootstrap.Modal(document.getElementById('optionModal'));
+
+    const formatMoney = (amount) => {
+        return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+    }
+
+    // A. BẤM VÀO MÓN -> MỞ POPUP TÙY CHỌN
+    const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+    addToCartButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Lưu thông tin món đang chọn vào biến tạm
+            monDangChon = {
+                id: this.getAttribute('data-id'),
+                ten: this.getAttribute('data-ten'),
+                giaGoc: parseFloat(this.getAttribute('data-gia'))
+            };
+
+            // Hiển thị tên và giá lên Modal
+            document.getElementById('modalItemName').innerText = monDangChon.ten;
+            document.getElementById('modalItemPrice').innerText = formatMoney(monDangChon.giaGoc);
+
+            // Reset lại form tùy chọn (bỏ check hết, xóa ghi chú)
+            document.getElementById('modalNote').value = '';
+            document.querySelectorAll('.option-duong').forEach(r => r.checked = false);
+            document.querySelectorAll('.option-da').forEach(r => r.checked = false);
+            document.querySelectorAll('.option-topping').forEach(c => c.checked = false);
+
+            // Mở Popup
+            optionModal.show();
+        });
+    });
+
+    // B. BẤM NÚT "LƯU" TRONG POPUP
+    document.getElementById('btnSaveOption').addEventListener('click', function() {
+        // 1. Kiểm tra Lượng Đá (Bắt buộc)
+        const daDaChon = document.querySelector('.option-da:checked');
+        if (!daDaChon) {
+            alert("Vui lòng chọn Lượng đá!");
+            return;
+        }
+
+        // 2. Lấy Lượng Đường (Mặc định 100% nếu không chọn)
+        const duongDaChon = document.querySelector('.option-duong:checked');
+        const strDuong = duongDaChon ? duongDaChon.value : "100% đường";
+
+        // 3. Lấy Topping và tính thêm tiền
+        let strTopping = [];
+        let tienTopping = 0;
+        document.querySelectorAll('.option-topping:checked').forEach(top => {
+            strTopping.push(top.getAttribute('data-name'));
+            tienTopping += parseFloat(top.getAttribute('data-price'));
+        });
+
+        // 4. Lấy Ghi chú
+        const ghiChu = document.getElementById('modalNote').value;
+
+        // 5. Nối chuỗi Option để hiển thị (VD: 70% đường, Đá chung, Trân châu đen)
+        let mangOption = [strDuong, daDaChon.value];
+        if (strTopping.length > 0) mangOption = mangOption.concat(strTopping);
+        let chuoiOption = mangOption.join(', ');
+        if (ghiChu) chuoiOption += ` (${ghiChu})`;
+
+        // 6. Tính giá cuối và tạo ID duy nhất cho giỏ hàng
+        const giaCuoi = monDangChon.giaGoc + tienTopping;
+        // Gom nhóm món: Cùng ID sản phẩm và cùng Option thì cộng dồn số lượng
+        const cartItemId = monDangChon.id + '_' + chuoiOption.replace(/\s+/g, '');
+
+        // 7. Thêm vào mảng Giỏ hàng
+        const existingItem = gioHang.find(item => item.cartId === cartItemId);
+        if (existingItem) {
+            existingItem.soLuong++;
+        } else {
+            gioHang.push({
+                cartId: cartItemId, // ID nội bộ của giỏ hàng
+                id: monDangChon.id, // Mã SP thật dưới Database
+                ten: monDangChon.ten,
+                gia: giaCuoi,
+                soLuong: 1,
+                tuyChon: chuoiOption
+            });
+        }
+
+        veLaiGioHang();
+        optionModal.hide(); // Đóng popup
+    });
+
+    // C. HÀM ĐỔI SỐ LƯỢNG (+ / -)
+    window.doiSoLuong = function(cartId, thayDoi) {
+        const index = gioHang.findIndex(item => item.cartId === cartId);
+        if (index !== -1) {
+            gioHang[index].soLuong += thayDoi;
+            if (gioHang[index].soLuong <= 0) {
+                gioHang.splice(index, 1);
+            }
+            veLaiGioHang();
+        }
+    }
+
+    // D. HÀM VẼ LẠI BILL BÊN PHẢI (Có thêm dòng Tùy chọn)
+    function veLaiGioHang() {
+        const cartContainer = document.getElementById('cart-items');
+        const totalContainer = document.getElementById('cart-total');
+
+        cartContainer.innerHTML = '';
+        let tongTien = 0;
+
+        if (gioHang.length === 0) {
+            cartContainer.innerHTML = '<div class="text-center text-muted mt-5">Chưa có món nào được chọn.</div>';
+            totalContainer.innerText = '0 đ';
+            return;
+        }
+
+        gioHang.forEach(item => {
+            tongTien += (item.gia * item.soLuong);
+            const html = `
+                <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-2">
+                    <div style="flex: 1; padding-right: 10px;">
+                        <div class="fw-bold">${item.ten}</div>
+                        <small class="text-muted d-block lh-sm mb-1" style="font-size: 0.8rem;">${item.tuyChon}</small>
+                        <div class="text-danger fw-bold">${formatMoney(item.gia)}</div>
+                    </div>
+                    <div class="d-flex align-items-center mt-1">
+                        <button class="btn btn-sm btn-light border" onclick="doiSoLuong('${item.cartId}', -1)">-</button>
+                        <span class="mx-2 fw-bold">${item.soLuong}</span>
+                        <button class="btn btn-sm btn-light border" onclick="doiSoLuong('${item.cartId}', 1)">+</button>
+                    </div>
+                </div>
+            `;
+            cartContainer.innerHTML += html;
+        });
+
+        totalContainer.innerText = formatMoney(tongTien);
+    }
+
+    // E. XỬ LÝ NÚT THANH TOÁN (Chuyển sang trang chọn phương thức)
+    window.thanhToan = function() {
+        if (gioHang.length === 0) {
+            alert("Vui lòng chọn ít nhất 1 món để thanh toán!");
+            return;
+        }
+
+        // 1. Tính toán lại tổng tiền hiện tại
+        let tongTien = 0;
+        gioHang.forEach(item => tongTien += (item.gia * item.soLuong));
+
+        // 2. Lưu tổng tiền và GIỎ HÀNG vào bộ nhớ tạm để mang sang trang sau
+        localStorage.setItem('tongTienThanhToan', tongTien);
+        localStorage.setItem('gioHang', JSON.stringify(gioHang));
+
+        // 3. Chuyển hướng sang trang thanh toán.
+        const maBan = "[[${ban.maBan}]]";
+        window.location.href = '/hoa-don/thanh-toan/' + maBan;
+    }
+
+    // G. HÀM LƯU TẠM ĐƠN HÀNG VÀ CẬP NHẬT DATABASE
+    window.luuTamVaQuayLai = function() {
+        const maBan = "[[${ban.maBan}]]";
+        let trangThaiMoi = "Trống"; // Mặc định là trống nếu giỏ hàng không có gì
+
+        if (gioHang.length > 0) {
+            // Nếu có món, tính tiền và lưu giỏ hàng
+            let tongTien = 0;
+            gioHang.forEach(item => tongTien += (item.gia * item.soLuong));
+
+            localStorage.setItem('parked_cart_' + maBan, JSON.stringify(gioHang));
+            localStorage.setItem('parked_total_' + maBan, tongTien);
+
+            trangThaiMoi = "Có khách"; // Cập nhật trạng thái thành có khách
+        } else {
+            // Nếu giỏ trống, xóa dữ liệu tạm
+            localStorage.removeItem('parked_cart_' + maBan);
+            localStorage.removeItem('parked_total_' + maBan);
+        }
+
+        // Đóng gói dữ liệu để gửi về Java
+        const formData = new FormData();
+        formData.append("maBan", maBan);
+        formData.append("trangThai", trangThaiMoi);
+
+        // Gọi API cập nhật xuống Database
+        fetch('/hoa-don/cap-nhat-trang-thai-ban', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            if(data === "OK") {
+                // Đợi cập nhật Database thành công thì mới chuyển trang
+                window.location.href = '/hoa-don/ban-hang';
+            } else {
+                alert("Lỗi cập nhật trạng thái bàn: " + data);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.location.href = '/hoa-don/ban-hang'; // Lỗi mạng thì vẫn cho thoát ra
+        });
+    }
+
+    // H. HÀM TỰ ĐỘNG KHÔI PHỤC GIỎ HÀNG KHI VÀO LẠI BÀN
+    document.addEventListener('DOMContentLoaded', function() {
+        const maBan = "[[${ban.maBan}]]";
+        const savedCart = localStorage.getItem('parked_cart_' + maBan);
+        if (savedCart) {
+            gioHang = JSON.parse(savedCart); // Kéo dữ liệu vào mảng
+            veLaiGioHang(); // Vẽ lên màn hình
+        }
+    });
+
+    // F. HÀM HỦY ĐƠN (XÓA SẠCH GIỎ HÀNG)
+    window.huyDon = function() {
+        if (gioHang.length === 0) {
+            alert("Đơn hàng đang trống, không có gì để hủy cả!");
+            return;
+        }
+
+        // Hiện thông báo hỏi lại cho chắc ăn, tránh nhân viên lỡ tay bấm nhầm
+        const xacNhan = confirm("⚠️ BẠN CÓ CHẮC CHẮN MUỐN HỦY ĐƠN?\nToàn bộ các món đã chọn sẽ bị xóa sạch.");
+
+        if (xacNhan) {
+            gioHang = []; // Xóa sạch mảng dữ liệu giỏ hàng
+            veLaiGioHang(); // Render lại giao diện (sẽ tự động về 0 đ)
+
+            // Dọn dẹp luôn bộ nhớ tạm của bàn này (tránh trường hợp trước đó đã lỡ lưu tạm)
+            const maBan = "[[${ban.maBan}]]";
+            localStorage.removeItem('parked_cart_' + maBan);
+            localStorage.removeItem('parked_total_' + maBan);
+        }
+    }
+</script>
+</body>
+</html>
