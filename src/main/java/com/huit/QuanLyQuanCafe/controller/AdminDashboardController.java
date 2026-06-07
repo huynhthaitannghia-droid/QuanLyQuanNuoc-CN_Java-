@@ -6,6 +6,7 @@ import com.huit.QuanLyQuanCafe.repository.HoaDonRepository;
 import com.huit.QuanLyQuanCafe.repository.SanPhamRepository;
 import com.huit.QuanLyQuanCafe.repository.NhanVienRepository;
 import com.huit.QuanLyQuanCafe.repository.KetToanCaRepository;
+import com.huit.QuanLyQuanCafe.repository.ToppingRepository; // THÊM IMPORT NÀY
 import com.huit.QuanLyQuanCafe.entity.NhanVien;
 import com.huit.QuanLyQuanCafe.entity.KetToanCa;
 import jakarta.servlet.http.HttpSession;
@@ -42,6 +43,9 @@ public class AdminDashboardController {
     @Autowired
     private KetToanCaRepository ketToanCaRepository;
 
+    @Autowired
+    private ToppingRepository toppingRepository; // THÊM REPOSITORY NÀY
+
     @GetMapping("/dashboard")
     public String hienThiTrangDashboard(Model model, HttpSession session) {
         // --- 1. XỬ LÝ 4 THẺ THỐNG KÊ TRÊN CÙNG ---
@@ -74,6 +78,13 @@ public class AdminDashboardController {
         String monBanChay = chiTietHoaDonRepository.layTenSanPhamBanChayNhat();
         model.addAttribute("monBanChay", monBanChay != null ? monBanChay : "Chưa có dữ liệu");
 
+        // --- BỔ SUNG: ĐẾM SỐ BÀN VÀ TOPPING ---
+        long tongSoBan = banRepository.count();
+        model.addAttribute("tongSoBan", tongSoBan);
+
+        long tongSoTopping = toppingRepository.count();
+        model.addAttribute("tongSoTopping", tongSoTopping);
+
         // --- 2. LẤY 5 ĐƠN HÀNG MỚI NHẤT ---
         model.addAttribute("donHangMoi", hoaDonRepository.findTop5ByOrderByMaHDDesc());
 
@@ -100,7 +111,6 @@ public class AdminDashboardController {
 
         return "admin/dashboard";
     }
-
 
     // API LẤY CHI TIẾT HÓA ĐƠN ĐỂ HIỂN THỊ POPUP
     @GetMapping("/api/chi-tiet-hoa-don/{maHD}")

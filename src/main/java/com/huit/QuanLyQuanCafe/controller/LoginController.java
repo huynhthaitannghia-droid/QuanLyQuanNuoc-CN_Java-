@@ -1,6 +1,8 @@
 package com.huit.QuanLyQuanCafe.controller;
 
+import com.huit.QuanLyQuanCafe.entity.KetToanCa;
 import com.huit.QuanLyQuanCafe.entity.NhanVien;
+import com.huit.QuanLyQuanCafe.repository.KetToanCaRepository;
 import com.huit.QuanLyQuanCafe.repository.NhanVienRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +12,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 @Controller
 public class LoginController {
 
     @Autowired
     private NhanVienRepository nhanVienRepository;
+
+    @Autowired
+    private KetToanCaRepository ketToanCaRepository; // Tiêm Repository để xử lý ca làm việc
 
     // 1. Hiển thị trang đăng nhập (Trang chủ mặc định)
     @GetMapping("/")
@@ -42,6 +50,20 @@ public class LoginController {
                 session.setAttribute("tenNV", nv.getTenNV());
                 session.setAttribute("vaiTro", nv.getVaiTro());
 
+                // ==========================================
+                // THÊM MỚI: LOGIC TỰ ĐỘNG MỞ CA LÀM VIỆC
+                // ==========================================
+                KetToanCa caDangMo = ketToanCaRepository.timCaDangMoCuaNhanVien(nv.getMaNV());
+                if (caDangMo == null) {
+                    KetToanCa caMoi = new KetToanCa();
+                    caMoi.setMaNhanVien(nv.getMaNV());
+                    caMoi.setNgayMoCa(LocalDate.now());
+                    caMoi.setGioMoCa(LocalTime.now());
+                    caMoi.setTienDauCa(0.0);
+                    ketToanCaRepository.save(caMoi);
+                }
+                // ==========================================
+
                 return "Admin".equalsIgnoreCase(nv.getVaiTro()) ? "redirect:/admin/dashboard" : "redirect:/hoa-don/ban-hang";
             } else {
                 model.addAttribute("error", "Sai tên đăng nhập hoặc mật khẩu!");
@@ -55,7 +77,7 @@ public class LoginController {
     }
 
     // ==========================================
-    // 3. XỬ LÝ ĐĂNG XUẤT (THÊM MỚI Ở ĐÂY)
+    // 3. XỬ LÝ ĐĂNG XUẤT
     // ==========================================
     @GetMapping("/logout")
     public String xuLyDangXuat(HttpSession session) {

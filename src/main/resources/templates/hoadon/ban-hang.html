@@ -133,11 +133,12 @@
                 let matchTab = false;
                 let matchRadio = false;
 
+                // FIX: Sử dụng startsWith thay vì includes để tránh nhầm lẫn "g" trong "mang về"
                 if (activeTab === "ALL") matchTab = true;
-                else if (activeTab === "TAI_CHO" && tenBan.includes("bàn")) matchTab = true;
-                else if (activeTab === "SHIP" && tenBan.includes("ship")) matchTab = true;
-                else if (activeTab === "GRAB" && (tenBan.includes("g") || tenBan.includes("grab"))) matchTab = true;
-                else if (activeTab === "MANG_VE" && tenBan.includes("mang về")) matchTab = true;
+                else if (activeTab === "TAI_CHO" && tenBan.startsWith("bàn")) matchTab = true;
+                else if (activeTab === "SHIP" && tenBan.startsWith("ship")) matchTab = true;
+                else if (activeTab === "GRAB" && (tenBan.startsWith("g") || tenBan.startsWith("grab"))) matchTab = true;
+                else if (activeTab === "MANG_VE" && tenBan.startsWith("mang về")) matchTab = true;
 
                 if (activeRadio === "ALL") matchRadio = true;
                 else if (activeRadio === trangThai) matchRadio = true;
@@ -205,7 +206,7 @@
             return; // Lệnh này giúp dừng hẳn hàm, không chạy các dòng bên dưới nữa
         }
 
-        // 2. NẾU ĐÃ THANH TOÁN HẾT THÌ MỞ MODAL BÌNH THƯỜNG
+        // 2. NẾU ĐĐÃ THANH TOÁN HẾT THÌ MỞ MODAL BÌNH THƯỜNG
         const now = new Date();
         const gio = now.getHours().toString().padStart(2, '0');
         const phut = now.getMinutes().toString().padStart(2, '0');

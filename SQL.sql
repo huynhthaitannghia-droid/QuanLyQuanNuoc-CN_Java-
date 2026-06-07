@@ -94,12 +94,15 @@ CREATE TABLE ChiTietHoaDon_Topping (
     FOREIGN KEY (MaTopping) REFERENCES Topping(MaTopping) ON DELETE CASCADE
 );
 
--- 9. Bảng Kết Toán Ca
+-- 9. Bảng Kết Toán Ca (ĐÃ CẬP NHẬT MỞ CA LÀM VIỆC)
 CREATE TABLE KetToanCa (
     Id INT AUTO_INCREMENT PRIMARY KEY,
-    TongDoanhThu DECIMAL(10,2) NOT NULL DEFAULT 0,
-    NgayDongCa DATE NOT NULL,
-    GioDongCa TIME NOT NULL,
+    NgayMoCa DATE NOT NULL,
+    GioMoCa TIME NOT NULL,
+    TienDauCa DECIMAL(10,2) DEFAULT 0,
+    TongDoanhThu DECIMAL(10,2) DEFAULT 0,
+    NgayDongCa DATE, -- Cho phép NULL vì lúc mở ca chưa đóng
+    GioDongCa TIME,  -- Cho phép NULL
     MaNV INT NOT NULL,
     FOREIGN KEY (MaNV) REFERENCES NhanVien(MaNV)
 );

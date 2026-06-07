@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 @Controller
 @RequestMapping("/hoa-don")
 public class HoaDonController {
+
     @Autowired
     private KetToanCaRepository ketToanCaRepository;
 
@@ -77,9 +78,8 @@ public class HoaDonController {
     // --- API LƯU HÓA ĐƠN VÀO DATABASE ---
     @PostMapping("/luu-thanh-toan")
     @ResponseBody
-    public String luuThanhToanDatabase(@RequestBody OrderRequest request, HttpSession session) { // Bổ sung HttpSession ở đây
+    public String luuThanhToanDatabase(@RequestBody OrderRequest request, HttpSession session) {
         try {
-            // Lấy mã nhân viên đang đăng nhập từ Session
             Integer maNV = (Integer) session.getAttribute("maNV");
             if (maNV == null) {
                 return "LỖI: Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại!";
@@ -90,17 +90,14 @@ public class HoaDonController {
             hd.setTongTien(request.getTongTien());
             hd.setPhuongThucThanhToan(request.getPhuongThuc());
             hd.setLoaiDon("Tại quán");
-            hd.setTrangThai(1); // 1: Đã thanh toán
+            hd.setTrangThai(1);
 
-            // Gán Ngày và Giờ tách biệt (Kế thừa từ pha nâng cấp DB vừa rồi)
             hd.setNgayTao(java.time.LocalDate.now());
             hd.setGioTao(java.time.LocalTime.now());
 
-            // Gán Bàn
             Ban ban = banRepository.findById(request.getMaBan()).orElse(null);
             hd.setBan(ban);
 
-            // Gán Nhân Viên thực tế từ Session thay vì fix cứng số 1
             NhanVien nv = nhanVienRepository.findById(maNV)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên trong Database"));
             hd.setNhanVien(nv);
@@ -153,10 +150,10 @@ public class HoaDonController {
         }
     }
 
-    // --- API LƯU TỔNG KẾT DOANH THU CA ---
+    // --- API LƯU TỔNG KẾT DOANH THU CA (ĐÃ ĐƯỢC NÂNG CẤP) ---
     @PostMapping("/luu-dong-ca")
     @ResponseBody
-    public String luuDongCa(@RequestParam("tongTien") BigDecimal tongTien, HttpSession session) {
+    public String luuDongCa(@RequestParam("tongTien") Double tongTien, HttpSession session) {
         try {
             Integer maNV = (Integer) session.getAttribute("maNV");
 
@@ -164,17 +161,21 @@ public class HoaDonController {
                 return "Lỗi: Phiên làm việc đã hết hạn. Không tìm thấy thông tin nhân viên!";
             }
 
-            KetToanCa ca = new KetToanCa();
-            ca.setTongDoanhThu(tongTien);
+            // Tìm ca làm việc đang mở của nhân viên này
+            KetToanCa caHienTai = ketToanCaRepository.timCaDangMoCuaNhanVien(maNV);
 
-            // Lấy Ngày và Giờ hiện tại tách biệt nhau
-            ca.setNgayDongCa(java.time.LocalDate.now());
-            ca.setGioDongCa(java.time.LocalTime.now());
+            if (caHienTai != null) {
+                // Cập nhật thông tin vào ca hiện tại (thay vì tạo ca mới)
+                caHienTai.setTongDoanhThu(tongTien);
+                caHienTai.setNgayDongCa(java.time.LocalDate.now());
+                caHienTai.setGioDongCa(java.time.LocalTime.now());
 
-            ca.setMaNhanVien(maNV);
+                ketToanCaRepository.save(caHienTai);
+                return "OK";
+            } else {
+                return "Lỗi: Không tìm thấy ca làm việc nào đang mở để đóng!";
+            }
 
-            ketToanCaRepository.save(ca);
-            return "OK";
         } catch (Exception e) {
             e.printStackTrace();
             return "Lỗi: " + e.getMessage();

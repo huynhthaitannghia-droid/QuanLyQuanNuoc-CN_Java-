@@ -37,6 +37,10 @@
             <li><a href="/san-pham"><i class="fa-solid fa-box me-2"></i> Quản lý Sản phẩm</a></li>
             <li><a href="/danh-muc"><i class="fa-solid fa-layer-group me-2"></i> Quản lý Danh mục</a></li>
             <li><a href="/nhan-vien"><i class="fa-solid fa-users me-2"></i> Quản lý Nhân viên</a></li>
+
+            <li><a href="/ban"><i class="fa-solid fa-table-cells-large me-2"></i> Quản lý Bàn</a></li>
+            <li><a href="/topping"><i class="fa-solid fa-ice-cream me-2"></i> Quản lý Topping</a></li>
+
             <li class="border-top mt-3"><a href="/hoa-don/ban-hang" class="text-warning"><i class="fa-solid fa-cash-register me-2"></i> Bán Hàng (POS)</a></li>
         </ul>
         <ul class="list-unstyled mt-auto mb-3">
@@ -51,28 +55,42 @@
         </div>
 
         <div class="row g-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #198754;">
                     <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Doanh thu nay</h6>
                     <h3 class="fw-bold text-dark m-0" th:text="${#numbers.formatDecimal(doanhThuHomNay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #fd7e14;">
                     <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Đơn hàng</h6>
                     <h3 class="fw-bold text-dark m-0" th:text="${donHangHomNay}">0</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #0d6efd;">
                     <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Bàn đang phục vụ</h6>
                     <h3 class="fw-bold text-dark m-0" th:text="${banPhucVu}">0</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #dc3545;">
                     <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Món bán chạy</h6>
                     <h5 class="fw-bold text-dark m-0 text-truncate" th:text="${monBanChay}">Tên món</h5>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #6f42c1;">
+                    <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Tổng Số Bàn</h6>
+                    <h3 class="fw-bold text-dark m-0" th:text="${tongSoBan}">0</h3>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card stat-card bg-white border-0 p-4" style="border-left: 5px solid #20c997;">
+                    <h6 class="text-uppercase fw-bold text-muted" style="font-size: 0.85rem;">Loại Topping</h6>
+                    <h3 class="fw-bold text-dark m-0" th:text="${tongSoTopping}">0</h3>
                 </div>
             </div>
         </div>

@@ -16,11 +16,16 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // Đăng ký bộ chặn bảo vệ hệ thống
         registry.addInterceptor(authInterceptor)
-                // Các đường dẫn BẮT BUỘC phải đăng nhập mới được vào
-                .addPathPatterns("/admin/**", "/san-pham/**", "/hoa-don/**")
+                // 1. CHẶN TOÀN BỘ: Áp dụng Interceptor cho mọi ngóc ngách của website
+                .addPathPatterns("/**")
 
-                // Các đường dẫn NGOẠI LỆ (Không chặn)
-                .excludePathPatterns("/", "/login", "/logout") // Trang đăng nhập gốc công cộng
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/webjars/**"); // Các file giao diện tĩnh
+                // 2. NGOẠI LỆ (Không chặn): Chỉ mở cửa cho những trang công khai
+                .excludePathPatterns(
+                        "/",               // Trang chủ
+                        "/xac-thuc",       // Hàm xử lý khi bấm đăng nhập
+                        "/login",          // Đăng nhập
+                        "/logout",         // Đăng xuất
+                        "/css/**", "/js/**", "/images/**", "/webjars/**" // File tĩnh
+                );
     }
 }

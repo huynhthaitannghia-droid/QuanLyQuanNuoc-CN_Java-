@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Bàn - Admin LaQuin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; margin: 0; padding: 0; }
+        .wrapper { display: flex; width: 100%; }
+
+        /* SIDEBAR CỐ ĐỊNH */
+        #sidebar {
+            position: fixed; top: 0; left: 0; width: 250px; height: 100vh;
+            background: #343a40; color: #fff; display: flex; flex-direction: column; z-index: 1000;
+        }
+        #sidebar .sidebar-header { padding: 20px; background: #2f353a; text-align: center; }
+        #sidebar ul li a { padding: 15px 20px; font-size: 1.1rem; display: block; color: #c2c7d0; text-decoration: none; transition: 0.3s; }
+        #sidebar ul li a:hover { color: #fff; background: #495057; }
+        #sidebar ul li.active > a { color: #fff; background: #007bff; border-left: 4px solid #fff; }
+
+        #content { margin-left: 250px; width: calc(100% - 250px); padding: 30px; min-height: 100vh; }
+        .table-wrapper { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <nav id="sidebar" class="d-flex flex-column">
+        <div class="sidebar-header">
+            <h4 class="m-0 fw-bold text-white"><i class="fa-solid fa-mug-hot me-2"></i>LaQuin Admin</h4>
+        </div>
+        <ul class="list-unstyled components mt-3">
+            <li><a href="/admin/dashboard"><i class="fa-solid fa-chart-pie me-2"></i> Tổng quan</a></li>
+            <li><a href="/san-pham"><i class="fa-solid fa-box me-2"></i> Quản lý Sản phẩm</a></li>
+            <li><a href="/danh-muc"><i class="fa-solid fa-layer-group me-2"></i> Quản lý Danh mục</a></li>
+            <li><a href="/nhan-vien"><i class="fa-solid fa-users me-2"></i> Quản lý Nhân viên</a></li>
+            <li class="active"><a href="/ban"><i class="fa-solid fa-table-cells-large me-2"></i> Quản lý Bàn</a></li>
+            <li><a href="/topping"><i class="fa-solid fa-ice-cream me-2"></i> Quản lý Topping</a></li>
+            <li class="border-top mt-3"><a href="/hoa-don/ban-hang" class="text-warning"><i class="fa-solid fa-cash-register me-2"></i> Bán Hàng (POS)</a></li>
+        </ul>
+        <ul class="list-unstyled mt-auto mb-3">
+            <li class="border-top pt-2"><a href="#" onclick="dangXuat()" class="text-danger fw-bold"><i class="fa-solid fa-right-from-bracket me-2"></i> Đăng xuất</a></li>
+        </ul>
+    </nav>
+
+    <div id="content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-dark m-0">Quản lý Bàn</h2>
+                <span class="text-muted">Danh sách các bàn phục vụ tại quán.</span>
+            </div>
+            <a th:href="@{/ban/them}" class="btn btn-primary px-4 shadow-sm">
+                <i class="fa-solid fa-plus me-1"></i> Thêm bàn mới
+            </a>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th width="20%">MÃ BÀN</th>
+                    <th>TÊN BÀN</th>
+                    <th class="text-end" width="20%">HÀNH ĐỘNG</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${listBan}">
+                    <td class="text-muted" th:text="${'#' + b.maBan}">#1</td>
+                    <td class="fw-bold fs-6" th:text="${b.tenBan}">Bàn 1</td>
+
+                    <td class="text-end">
+                        <a th:href="@{/ban/sua/{id}(id=${b.maBan})}" class="btn btn-sm btn-outline-primary me-2" title="Sửa">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <a th:href="@{/ban/xoa/{id}(id=${b.maBan})}" class="btn btn-sm btn-outline-danger" title="Xóa"
+                           onclick="return confirm('Bạn có chắc chắn muốn xóa bàn này không?');">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(listBan)}">
+                    <td colspan="3" class="text-center text-muted py-5">
+                        <i class="fa-solid fa-inbox fs-1 mb-3 d-block text-black-50"></i>
+                        Chưa có dữ liệu bàn nào.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function dangXuat() { if(confirm("Chắc chắn muốn thoát?")) window.location.href = '/logout'; }
+</script>
+</body>
+</html>

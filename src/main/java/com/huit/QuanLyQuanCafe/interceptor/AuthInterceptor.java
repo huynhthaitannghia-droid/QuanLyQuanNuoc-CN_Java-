@@ -22,12 +22,20 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false; // Chặn lại, không cho đi tiếp vào Controller
         }
 
-        // 2. PHÂN QUYỀN CHI TIẾT: Nếu cố tình vào trang Admin (/admin/** hoặc /san-pham/**)
-        if (uri.startsWith("/admin") || uri.startsWith("/san-pham")) {
-            // Mà vai trò KHÔNG PHẢI là Admin (tức là Staff cố tình bypass) -> Đá về trang bán hàng của nhân viên
+        // 2. ĐỊNH NGHĨA VÙNG CẤM: Gom tất cả các URL dành riêng cho Admin vào một nhóm
+        boolean isAdminPage = uri.startsWith("/admin") ||
+                uri.startsWith("/san-pham") ||
+                uri.startsWith("/nhan-vien") ||
+                uri.startsWith("/danh-muc") ||
+                uri.startsWith("/ban") ||
+                uri.startsWith("/topping");
+
+        // 3. PHÂN QUYỀN CHI TIẾT: Nếu cố tình vào vùng cấm của Admin
+        if (isAdminPage) {
+            // Mà vai trò KHÔNG PHẢI là Admin (tức là Staff cố tình bypass) -> Đá về trang bán hàng
             if (!"Admin".equalsIgnoreCase((String) vaiTro)) {
                 response.sendRedirect("/hoa-don/ban-hang?error=NoPermission");
-                return false;
+                return false; // Chặn đứng tại đây
             }
         }
 
