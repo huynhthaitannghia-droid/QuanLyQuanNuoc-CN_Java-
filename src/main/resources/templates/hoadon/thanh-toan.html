@@ -9,119 +9,227 @@
         .top-bar { background: white; border-bottom: 1px solid #ccc; }
         .payment-sidebar { background: white; height: calc(100vh - 60px); border-right: 1px solid #ccc; }
         .payment-method-btn { width: 100%; border: none; border-bottom: 1px solid #ccc; padding: 25px; font-size: 1.2rem; background: white; text-align: center;}
-        .payment-method-btn.active { background-color: #f0f0f0; font-weight: bold; }
+        .payment-method-btn.active { background-color: #f0f0f0; font-weight: bold; border-left: 5px solid #0d6efd; }
         .main-content { height: calc(100vh - 60px); position: relative; background: white; }
         .total-header { border-bottom: 1px solid #ccc; padding: 20px 30px; font-size: 1.5rem; }
-        .qr-box { border: 3px solid #0d6efd; border-radius: 15px; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; margin: 50px auto; background: white;}
+
+        /* Cải tiến khung QR */
+        .qr-box { border: 2px solid #0d6efd; border-radius: 15px; width: 320px; height: 320px; display: flex; align-items: center; justify-content: center; margin: 40px auto; background: white; overflow: hidden; }
+        .qr-box img { max-width: 100%; max-height: 100%; }
+
         .btn-checkout { position: absolute; bottom: 0; right: 0; font-size: 1.5rem; border-radius: 0; padding: 20px 40px; }
+
+        /* CSS cho nút gợi ý tiền */
+        .btn-suggest { font-weight: bold; width: 120px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div class="top-bar px-4 py-3 shadow-sm">
+<div class="top-bar px-4 py-3 shadow-sm d-flex justify-content-between align-items-center">
     <h3 class="m-0 text-dark">Thanh toán - <span th:text="${ban.tenBan}">Tên Bàn</span></h3>
+    <div>
+        <a href="/hoa-don/ban-hang" class="btn btn-outline-secondary me-2 fw-bold"><i class="fa-solid fa-arrow-left me-1"></i>Quay lại</a>
+    </div>
 </div>
 
 <div class="container-fluid p-0">
     <div class="row g-0">
-
         <div class="col-md-3 payment-sidebar">
             <button class="payment-method-btn active" id="btn-tienmat">Tiền mặt</button>
             <button class="payment-method-btn" id="btn-chuyenkhoan">Chuyển khoản</button>
         </div>
 
         <div class="col-md-9 main-content">
-            <div class="total-header">
-                Tổng: <span id="hien-thi-tien">0 VNĐ</span>
+            <div class="total-header fw-bold">
+                Tổng: <span id="hien-thi-tien" class="text-danger">0 VNĐ</span>
+            </div>
+
+            <div id="khu-vuc-tien-mat" class="p-4">
+                <div class="mb-4">
+                    <label class="form-label fw-bold fs-5">Khách đưa:</label>
+                    <div class="input-group mb-3 w-50">
+                        <input type="text" class="form-control fs-4 text-end text-primary fw-bold" id="tien-khach-dua" placeholder="Nhập số tiền...">
+                        <span class="input-group-text fw-bold">VNĐ</span>
+                    </div>
+
+                    <label class="form-label fw-bold text-muted">Gợi ý nhanh:</label>
+                    <div id="goi-y-tien" class="d-flex flex-wrap gap-2">
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-light border rounded">
+                    <h4 class="fw-bold m-0">Tiền thừa trả khách: <span id="tien-thua" class="text-success float-end">0 VNĐ</span></h4>
+                </div>
             </div>
 
             <div id="khu-vuc-qr" style="display: none;">
-                <div class="qr-box shadow-sm">
-                    Mã QR sẽ hiện <br> ở đây <br> <span class="fw-normal mt-2 fs-6">(Nếu thanh toán bằng hình thức chuyển khoản)</span>
+                <div class="qr-box shadow-sm" id="qrContainer">
+                    <img id="qrImage" src="" style="display: none;" alt="VietQR">
+                    <div id="qrPlaceholder" class="text-center text-muted p-3">Đang tạo mã QR...</div>
                 </div>
             </div>
 
             <button class="btn btn-primary btn-checkout" onclick="xuatHoaDon()">Thanh toán và xuất hóa đơn</button>
         </div>
-
     </div>
 </div>
 
 <script>
-    // 1. LẤY TỔNG TIỀN TỪ TRANG ORDER SANG VÀ HIỂN THỊ
+    // CẤU HÌNH TÀI KHOẢN NHẬN TIỀN
+    const MY_BANK = "vietcombank";
+    const MY_ACCOUNT = "1040425808";
+    const ACCOUNT_NAME = "HUYNH THAI TAN NGHIA";
+    const MENH_GIA_VN = [10000, 20000, 50000, 100000, 200000, 500000];
+
+    // 1. TẠO MÃ QR TỰ ĐỘNG
+    function taoMaQR() {
+        const tongTien = localStorage.getItem('tongTienThanhToan');
+        if(!tongTien) return;
+
+        const tenBan = "[[${ban.tenBan}]]";
+        const noiDungCK = "THANH TOAN " + tenBan.toUpperCase();
+
+        const url = `https://img.vietqr.io/image/${MY_BANK}-${MY_ACCOUNT}-compact2.png?amount=${tongTien}&addInfo=${encodeURIComponent(noiDungCK)}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+
+        const qrImg = document.getElementById('qrImage');
+        const qrPlace = document.getElementById('qrPlaceholder');
+
+        qrImg.src = url;
+        qrImg.style.display = 'block';
+        qrPlace.style.display = 'none';
+    }
+
+    // 2. LOGIC TIỀN MẶT & GỢI Ý (MỚI THÊM)
+    function khoiTaoTienMat(tongTien) {
+        tongTien = parseFloat(tongTien);
+        const container = document.getElementById('goi-y-tien');
+        container.innerHTML = '';
+
+        let cacGoiY = new Set();
+
+        // Gợi ý 1: Vừa đủ
+        cacGoiY.add(tongTien);
+
+        // Gợi ý 2: Làm tròn lên chục ngàn gần nhất (VD: 34k -> 40k)
+        let lamTronChucNgan = Math.ceil(tongTien / 10000) * 10000;
+        if(lamTronChucNgan > tongTien) cacGoiY.add(lamTronChucNgan);
+
+        // Gợi ý 3: Các mệnh giá chuẩn lớn hơn tổng tiền
+        for (let tien of MENH_GIA_VN) {
+            if (tien >= tongTien) cacGoiY.add(tien);
+        }
+
+        // Sắp xếp và tạo nút
+        let arrGoiY = Array.from(cacGoiY).sort((a,b) => a-b);
+        arrGoiY.forEach((tien, index) => {
+            let btn = document.createElement('button');
+            btn.className = index === 0 ? 'btn btn-outline-success btn-suggest' : 'btn btn-outline-secondary btn-suggest';
+            btn.innerText = index === 0 ? "Vừa đủ" : new Intl.NumberFormat('vi-VN').format(tien);
+            btn.onclick = () => nhapTienKhachDua(tien);
+            container.appendChild(btn);
+        });
+    }
+
+    function nhapTienKhachDua(soTien) {
+        const input = document.getElementById('tien-khach-dua');
+        input.value = new Intl.NumberFormat('vi-VN').format(soTien);
+        tinhTienThua(soTien);
+    }
+
+    function tinhTienThua(tienKhach) {
+        const tongTien = parseFloat(localStorage.getItem('tongTienThanhToan')) || 0;
+        let tienThua = tienKhach - tongTien;
+
+        const hienThiTienThua = document.getElementById('tien-thua');
+        if (tienThua < 0) {
+            hienThiTienThua.innerText = "Khách đưa thiếu!";
+            hienThiTienThua.className = "text-danger float-end";
+        } else {
+            hienThiTienThua.innerText = new Intl.NumberFormat('vi-VN').format(tienThua) + ' VNĐ';
+            hienThiTienThua.className = "text-success float-end";
+        }
+    }
+
+    // Xử lý khi người dùng tự nhập tay vào ô input
+    document.getElementById('tien-khach-dua').addEventListener('input', function(e) {
+        // Xóa các ký tự không phải số
+        let value = e.target.value.replace(/\D/g, "");
+        if(!value) {
+            tinhTienThua(0);
+            e.target.value = "";
+            return;
+        }
+        let parsedValue = parseInt(value, 10);
+        // Format lại hiển thị có dấu phẩy
+        e.target.value = new Intl.NumberFormat('vi-VN').format(parsedValue);
+        tinhTienThua(parsedValue);
+    });
+
+    // 3. XỬ LÝ SỰ KIỆN GIAO DIỆN CHUNG
     document.addEventListener("DOMContentLoaded", function() {
         const tongTien = localStorage.getItem('tongTienThanhToan');
         if(tongTien) {
-            // Đổi định dạng thành 299.000 VNĐ
-            const tienFormat = new Intl.NumberFormat('vi-VN').format(tongTien) + ' VNĐ';
-            document.getElementById('hien-thi-tien').innerText = tienFormat;
+            document.getElementById('hien-thi-tien').innerText = new Intl.NumberFormat('vi-VN').format(tongTien) + ' VNĐ';
+            khoiTaoTienMat(tongTien); // Khởi tạo gợi ý tiền mặt
         }
     });
 
-    // 2. XỬ LÝ CHUYỂN ĐỔI TAB (TIỀN MẶT / CHUYỂN KHOẢN)
-    const btnTienMat = document.getElementById('btn-tienmat');
-    const btnChuyenKhoan = document.getElementById('btn-chuyenkhoan');
-    const khuVucQR = document.getElementById('khu-vuc-qr');
-
-    btnTienMat.addEventListener('click', function() {
+    document.getElementById('btn-tienmat').addEventListener('click', function() {
         this.classList.add('active');
-        btnChuyenKhoan.classList.remove('active');
-        khuVucQR.style.display = 'none'; // Ẩn QR
+        document.getElementById('btn-chuyenkhoan').classList.remove('active');
+        document.getElementById('khu-vuc-qr').style.display = 'none';
+        document.getElementById('khu-vuc-tien-mat').style.display = 'block'; // Hiện khu vực tiền mặt
     });
 
-    btnChuyenKhoan.addEventListener('click', function() {
+    document.getElementById('btn-chuyenkhoan').addEventListener('click', function() {
         this.classList.add('active');
-        btnTienMat.classList.remove('active');
-        khuVucQR.style.display = 'block'; // Hiện QR
+        document.getElementById('btn-tienmat').classList.remove('active');
+        document.getElementById('khu-vuc-qr').style.display = 'block';
+        document.getElementById('khu-vuc-tien-mat').style.display = 'none'; // Ẩn khu vực tiền mặt
+        taoMaQR();
     });
 
-    // 3. XỬ LÝ NÚT THANH TOÁN CUỐI CÙNG (LƯU DATABASE)
-        function xuatHoaDon() {
-            // Gom dữ liệu để gửi
-            const phuongThuc = document.querySelector('.payment-method-btn.active').innerText;
-            const tongTien = localStorage.getItem('tongTienThanhToan');
-            const gioHang = JSON.parse(localStorage.getItem('gioHang')); // Lấy giỏ hàng từ bộ nhớ
-            const maBan = "[[${ban.maBan}]]";
+    // 4. LƯU HÓA ĐƠN
+    function xuatHoaDon() {
+        const phuongThuc = document.querySelector('.payment-method-btn.active').innerText;
+        const tongTien = localStorage.getItem('tongTienThanhToan');
+        const gioHang = JSON.parse(localStorage.getItem('gioHang'));
+        const maBan = "[[${ban.maBan}]]";
 
-            const orderData = {
-                maBan: parseInt(maBan),
-                tongTien: parseFloat(tongTien),
-                phuongThuc: phuongThuc,
-                items: gioHang
-            };
-
-            // Gửi cục JSON về cho Spring Boot
-            fetch('/hoa-don/luu-thanh-toan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => response.text())
-            .then(data => {
-                if (data === "OK") {
-                    alert("✅ THANH TOÁN THÀNH CÔNG!\nHóa đơn và các món nước đã được lưu vĩnh viễn vào Database.");
-
-                    let doanhThuCa = parseFloat(localStorage.getItem('doanhThuCa')) || 0;
-                    doanhThuCa += parseFloat(tongTien);
-                    localStorage.setItem('doanhThuCa', doanhThuCa);
-
-                    // Xóa dữ liệu tạm cho sạch sẽ
-                    localStorage.removeItem('tongTienThanhToan');
-                    localStorage.removeItem('gioHang');
-
-                    const maBan = "[[${ban.maBan}]]";
-                    localStorage.removeItem('parked_cart_' + maBan);
-                    localStorage.removeItem('parked_total_' + maBan);
-
-                    // Đẩy nhân viên quay về lại sơ đồ Bàn
-                    window.location.href = '/hoa-don/ban-hang';
-                } else {
-                    alert("Có lỗi xảy ra khi lưu Database:\n" + data);
-                }
-            });
+        // Bắt lỗi nếu chọn tiền mặt mà khách đưa thiếu
+        if (phuongThuc === "Tiền mặt") {
+            let tienKhach = parseInt(document.getElementById('tien-khach-dua').value.replace(/\D/g, "")) || 0;
+            if (tienKhach < tongTien) {
+                alert("Khách đang đưa thiếu tiền. Vui lòng kiểm tra lại!");
+                return; // Chặn không cho lưu
+            }
         }
+
+        const orderData = {
+            maBan: parseInt(maBan),
+            tongTien: parseFloat(tongTien),
+            phuongThuc: phuongThuc,
+            items: gioHang
+        };
+
+        fetch('/hoa-don/luu-thanh-toan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.text())
+        .then(data => {
+            if (data === "OK") {
+                alert("✅ THANH TOÁN THÀNH CÔNG!");
+                localStorage.removeItem('tongTienThanhToan');
+                localStorage.removeItem('gioHang');
+                localStorage.removeItem('parked_cart_' + maBan);
+                window.location.href = '/hoa-don/ban-hang';
+            } else {
+                alert("Lỗi: " + data);
+            }
+        });
+    }
 </script>
 </body>
 </html>

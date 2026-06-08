@@ -1,26 +1,16 @@
 package com.huit.QuanLyQuanCafe.controller;
 
 import com.huit.QuanLyQuanCafe.dto.OrderRequest;
-import com.huit.QuanLyQuanCafe.entity.Ban;
-import com.huit.QuanLyQuanCafe.entity.ChiTietHoaDon;
-import com.huit.QuanLyQuanCafe.entity.HoaDon;
-import com.huit.QuanLyQuanCafe.entity.NhanVien;
-import com.huit.QuanLyQuanCafe.entity.SanPham;
-import com.huit.QuanLyQuanCafe.repository.BanRepository;
-import com.huit.QuanLyQuanCafe.repository.ChiTietHoaDonRepository;
-import com.huit.QuanLyQuanCafe.repository.DanhMucRepository;
-import com.huit.QuanLyQuanCafe.repository.HoaDonRepository;
-import com.huit.QuanLyQuanCafe.repository.NhanVienRepository;
-import com.huit.QuanLyQuanCafe.repository.SanPhamRepository;
+import com.huit.QuanLyQuanCafe.entity.*;
+import com.huit.QuanLyQuanCafe.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import com.huit.QuanLyQuanCafe.entity.KetToanCa;
-import com.huit.QuanLyQuanCafe.repository.KetToanCaRepository;
 import jakarta.servlet.http.HttpSession;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Controller
 @RequestMapping("/hoa-don")
@@ -46,6 +36,9 @@ public class HoaDonController {
 
     @Autowired
     private NhanVienRepository nhanVienRepository;
+
+    @Autowired
+    private ToppingRepository toppingRepository;
 
     @GetMapping
     public String hienThiDanhSachHoaDon(Model model) {
@@ -115,6 +108,17 @@ public class HoaDonController {
                 ct.setSoLuong(item.getSoLuong());
                 ct.setDonGia(item.getGia());
                 ct.setThanhTien(item.getGia().multiply(new BigDecimal(item.getSoLuong())));
+
+                // Cập nhật Lượng Đường & Đá lấy từ DTO (nếu null thì dùng mặc định)
+                ct.setLuongDuong(item.getLuongDuong() != null ? item.getLuongDuong() : "100% đường");
+                ct.setLuongDa(item.getLuongDa() != null ? item.getLuongDa() : "Đá chung");
+
+                // Xử lý lưu Topping (Ánh xạ ManyToMany)
+                if (item.getToppingIds() != null && !item.getToppingIds().isEmpty()) {
+                    List<Topping> toppings = toppingRepository.findAllById(item.getToppingIds());
+                    ct.setListToppings(toppings);
+                    // Lưu ý: Trong file Entity ChiTietHoaDon.java phải có List<Topping> toppings kèm annotation @ManyToMany nhé.
+                }
 
                 chiTietHoaDonRepository.save(ct);
             }

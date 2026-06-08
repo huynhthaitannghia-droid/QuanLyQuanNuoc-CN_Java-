@@ -102,9 +102,16 @@
                     <canvas id="doanhThuChart"></canvas>
                 </div>
             </div>
+
             <div class="col-md-5">
                 <div class="card p-4 border-0 shadow-sm h-100" style="border-radius: 15px;">
-                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-4"><i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Đơn hàng vừa xong</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 text-dark" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='#0d6efd'" onmouseout="this.style.color='#212529'" onclick="moModalLichSu()">
+                            <i class="fa-solid fa-clock-rotate-left text-success me-2"></i> Lịch sử đơn hàng
+                        </h5>
+                        <button class="btn btn-sm btn-outline-primary fw-bold" onclick="moModalLichSu()">Xem tất cả</button>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
@@ -126,10 +133,81 @@
     </div>
 </div>
 
+<div class="modal fade" id="lichSuDonHangModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content overflow-hidden" style="border: 2px solid #0d6efd; border-radius: 15px;">
+            <div class="modal-header bg-primary text-white border-bottom-0" style="border-radius: 13px 13px 0 0;">
+                <h5 class="modal-title fw-bold fs-4"><i class="fa-solid fa-calendar-days me-2"></i> TOÀN BỘ LỊCH SỬ ĐƠN HÀNG</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+
+                <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-secondary">Từ ngày:</label>
+                        <input type="date" id="filterTuNgay" class="form-control border-primary">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-secondary">Đến ngày:</label>
+                        <input type="date" id="filterDenNgay" class="form-control border-primary">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button class="btn btn-primary fw-bold flex-grow-1" onclick="locLichSuDonHang()">
+                            <i class="fa-solid fa-filter me-2"></i> Lọc dữ liệu
+                        </button>
+                        <button class="btn btn-outline-secondary fw-bold" onclick="resetBoLoc()" title="Xóa bộ lọc">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                    <table class="table table-hover align-middle text-center border">
+                        <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Ngày tạo</th>
+                            <th>Giờ tạo</th>
+                            <th>Tổng tiền</th>
+                            <th>Hình thức</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="bangToanBoDonHang">
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="chiTietHoaDonModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content"><div class="modal-header"><h5 class="modal-title">Chi tiết đơn <span id="modalMaHD"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body"><table class="table table-bordered text-center"><thead><tr><th>Món</th><th>SL</th><th>Đơn giá</th><th>Đường, Đá</th><th>Thành tiền</th></tr></thead><tbody id="bangChiTietMon"></tbody></table></div>
+        <div class="modal-content shadow-lg overflow-hidden" style="border: 3px solid #495057; border-radius: 15px;">
+            <div class="modal-header bg-dark text-white border-bottom-0" style="border-radius: 11px 11px 0 0;">
+                <h5 class="modal-title fw-bold fs-5">
+                    <i class="fa-solid fa-file-invoice me-2"></i> Chi tiết đơn <span id="modalMaHD" class="text-warning"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="table-responsive bg-white rounded-3 border">
+                    <table class="table table-hover text-center align-middle mb-0">
+                        <thead class="table-secondary">
+                        <tr>
+                            <th>Món</th>
+                            <th>SL</th>
+                            <th>Đơn giá</th>
+                            <th>Đường, Đá</th>
+                            <th>Thành tiền</th>
+                        </tr>
+                        </thead>
+                        <tbody id="bangChiTietMon"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -143,16 +221,114 @@
     const ctx = document.getElementById('doanhThuChart').getContext('2d');
     new Chart(ctx, { type: 'bar', data: { labels: /*[[${chartLabels}]]*/ [], datasets: [{ label: 'VNĐ', data: /*[[${chartData}]]*/ [], backgroundColor: '#0d6efd' }] } });
 
-    // XEM CHI TIẾT
+    // XEM CHI TIẾT HÓA ĐƠN GỐC
     function xemChiTiet(maHD) {
         document.getElementById('modalMaHD').innerText = '#' + maHD;
-        fetch('/admin/api/chi-tiet-hoa-don/' + maHD).then(r => r.json()).then(data => {
-            const tbody = document.getElementById('bangChiTietMon'); tbody.innerHTML = '';
-            data.forEach(item => {
-                tbody.innerHTML += `<tr><td>${item[0]}</td><td>${item[1]}</td><td>${item[2]} đ</td><td>${item[4]}, ${item[5]}</td><td>${item[3]} đ</td></tr>`;
+
+        fetch('/admin/api/chi-tiet-hoa-don/' + maHD)
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('bangChiTietMon');
+                tbody.innerHTML = '';
+
+                data.forEach(item => {
+                    let luongDuong = (item[4] == null || item[4] === '') ? '100% đường' : item[4];
+                    let luongDa = (item[5] == null || item[5] === '') ? 'Đá chung' : item[5];
+                    let toppingHtml = (item[6] == null || item[6] === '') ? '' : `<br><small class="text-primary fw-semibold"><i class="fa-solid fa-plus me-1" style="font-size: 0.7em;"></i>${item[6]}</small>`;
+                    let donGiaFormat = new Intl.NumberFormat('vi-VN').format(item[2]);
+                    let thanhTienFormat = new Intl.NumberFormat('vi-VN').format(item[3]);
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="text-start">
+                                <span class="fw-bold text-dark">${item[0]}</span>
+                                ${toppingHtml}
+                            </td>
+                            <td class="align-middle">${item[1]}</td>
+                            <td class="align-middle">${donGiaFormat} đ</td>
+                            <td class="align-middle"><span class="badge bg-light text-dark border">${luongDuong}, ${luongDa}</span></td>
+                            <td class="align-middle fw-bold text-danger">${thanhTienFormat} đ</td>
+                        </tr>`;
+                });
+
+                new bootstrap.Modal(document.getElementById('chiTietHoaDonModal')).show();
             });
-            new bootstrap.Modal(document.getElementById('chiTietHoaDonModal')).show();
+    }
+
+    // ==========================================
+    // LOGIC CHO TÍNH NĂNG LỊCH SỬ ĐƠN HÀNG
+    // ==========================================
+    let toanBoDonHang = [];
+    let lichSuModal;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        lichSuModal = new bootstrap.Modal(document.getElementById('lichSuDonHangModal'));
+    });
+
+    function moModalLichSu() {
+        fetch('/admin/api/lich-su-don-hang')
+            .then(res => res.json())
+            .then(data => {
+                toanBoDonHang = data;
+                hienThiBangLichSu(toanBoDonHang);
+                lichSuModal.show();
+            })
+            .catch(err => console.error("Lỗi tải lịch sử:", err));
+    }
+
+    function hienThiBangLichSu(danhSach) {
+        const tbody = document.getElementById('bangToanBoDonHang');
+        tbody.innerHTML = '';
+
+        if(danhSach.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-4 fw-bold">Không tìm thấy đơn hàng nào phù hợp!</td></tr>';
+            return;
+        }
+
+        const dsHienThi = [...danhSach].reverse();
+
+        dsHienThi.forEach(don => {
+            let tienFormat = new Intl.NumberFormat('vi-VN').format(don.tongTien) + ' đ';
+            let parts = don.ngayTao.split('-');
+            let ngayDep = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : don.ngayTao;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-primary">#${don.maHD}</td>
+                    <td>${ngayDep}</td>
+                    <td>${don.gioTao}</td>
+                    <td class="fw-bold text-danger fs-6">${tienFormat}</td>
+                    <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill">${don.hinhThuc}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-dark fw-bold px-3" onclick="xemChiTiet(${don.maHD})">
+                            <i class="fa-solid fa-eye me-1"></i> Chi tiết
+                        </button>
+                    </td>
+                </tr>
+            `;
         });
+    }
+
+    function locLichSuDonHang() {
+        let tuNgay = document.getElementById('filterTuNgay').value;
+        let denNgay = document.getElementById('filterDenNgay').value;
+
+        let ketQua = toanBoDonHang;
+
+        if(tuNgay) {
+            ketQua = ketQua.filter(don => don.ngayTao >= tuNgay);
+        }
+        if(denNgay) {
+            ketQua = ketQua.filter(don => don.ngayTao <= denNgay);
+        }
+
+        hienThiBangLichSu(ketQua);
+    }
+
+    function resetBoLoc() {
+        document.getElementById('filterTuNgay').value = '';
+        document.getElementById('filterDenNgay').value = '';
+        hienThiBangLichSu(toanBoDonHang);
     }
 
     const gio = new Date().getHours();

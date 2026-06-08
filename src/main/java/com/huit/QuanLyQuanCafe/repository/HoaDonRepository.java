@@ -22,10 +22,14 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     List<Object[]> getDoanhThu7NgayGanNhat();
 
     // LẤY CHI TIẾT HÓA ĐƠN TRẢ VỀ MẢNG OBJECT (Tránh lỗi đệ quy JSON)
-    @Query(value = "SELECT sp.TenSP, ct.SoLuong, ct.DonGia, ct.ThanhTien, ct.LuongDuong, ct.LuongDa " +
+    @Query(value = "SELECT sp.TenSP, ct.SoLuong, ct.DonGia, ct.ThanhTien, ct.LuongDuong, ct.LuongDa, GROUP_CONCAT(t.TenTopping SEPARATOR ', ') as Toppings " +
             "FROM ChiTietHoaDon ct " +
             "JOIN SanPham sp ON ct.MaSP = sp.MaSP " +
-            "WHERE ct.MaHD = :maHD", nativeQuery = true)
+            "LEFT JOIN ChiTietHoaDon_Topping ctt ON ct.MaCTHD = ctt.MaCTHD " +
+            "LEFT JOIN Topping t ON ctt.MaTopping = t.MaTopping " +
+            "WHERE ct.MaHD = ?1 " +
+            "GROUP BY ct.MaCTHD, sp.TenSP, ct.SoLuong, ct.DonGia, ct.ThanhTien, ct.LuongDuong, ct.LuongDa",
+            nativeQuery = true)
     List<Object[]> layChiTietHoaDonTheoMa(Integer maHD);
 
     // TÍNH TỔNG DOANH THU TRONG NGÀY HÔM NAY
